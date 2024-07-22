@@ -15,7 +15,12 @@ from nets import nn
 from utils import util
 from utils.dataset import Dataset
 
+from pprint import pprint
+
 warnings.filterwarnings("ignore")
+
+
+DATASETPATH = "dataset/"
 
 
 def learning_rate(args, params):
@@ -56,10 +61,11 @@ def train(args, params):
     ema = util.EMA(model) if args.local_rank == 0 else None
 
     filenames = []
-    with open("../Dataset/COCO/train2017.txt") as reader:
-        for filename in reader.readlines():
-            filename = filename.rstrip().split("/")[-1]
-            filenames.append("../Dataset/COCO/images/train2017/" + filename)
+
+    filenames = [
+        os.path.abspath(os.path.join(DATASETPATH, "train", "images", x))
+        for x in os.listdir(os.path.join(DATASETPATH, "train", "images"))
+    ]
 
     dataset = Dataset(filenames, args.input_size, params, True)
 
@@ -135,6 +141,7 @@ def train(args, params):
                 # Forward
                 with torch.cuda.amp.autocast():
                     outputs = model(samples)  # forward
+
                 loss = criterion(outputs, targets)
 
                 m_loss.update(loss.item(), samples.size(0))
@@ -206,10 +213,11 @@ def train(args, params):
 @torch.no_grad()
 def test(args, params, model=None):
     filenames = []
-    with open("../Dataset/COCO/val2017.txt") as reader:
-        for filename in reader.readlines():
-            filename = filename.rstrip().split("/")[-1]
-            filenames.append("../Dataset/COCO/images/val2017/" + filename)
+
+    filenames = [
+        os.path.abspath(os.path.join(DATASETPATH, "val", "images", x))
+        for x in os.listdir(os.path.join(DATASETPATH, "val", "images"))
+    ]
 
     dataset = Dataset(filenames, args.input_size, params, False)
     loader = data.DataLoader(
